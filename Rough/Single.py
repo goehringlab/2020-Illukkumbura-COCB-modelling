@@ -3,22 +3,25 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../..')
-import M as x
-import FlowsReview.Model as m
+import Model as m
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+import glob
 
 sdirec = '_temp'
-deltas = 1
+deltas = 10
 
 """
 Run
 
 """
 
-model = m.Model(Dm=1, Dc=10, Vm=0.01, Vc=0, kon=np.r_[0.01 * np.ones([80]), 0.02 * np.ones([20])], koff=0.001,
-                xsteps=100, Tmax=100, deltat=0.001, deltax=0.1, c_0=1, m_0=1, flowtype=3)
+# M = PAR(Da=0.1, Dp=0.1, konA=0.1, koffA=0.01, kposA=0, konP=0.1, koffP=0.0101, kposP=0, kAP=0.00, kPA=0.00,
+#             ePneg=2, eAneg=2, xsteps=100, Tmax=1000, deltat=0.01, L=50, psi=0.1, pA=1, pP=0, v=0.04)
+
+
+model = m.Model(Dm=0.02, Dc=10, Vm=0.04, Vc=0, kon=1 / 200, koff=1 / 200, xsteps=100, Tmax=1000, deltat=0.01,
+                deltax=0.5, c_0=1, m_0=1, flowtype=3)
 
 for t in range(int(model.Tmax / model.deltat)):
     model.react()
@@ -36,7 +39,7 @@ Slider plot
 
 from matplotlib.widgets import Slider
 
-direcs = x.direcslist(sdirec)
+direcs = sorted(glob.glob(sdirec + '/*/'))
 
 ax = plt.subplot2grid((1, 2), (0, 0))
 ax2 = plt.subplot2grid((1, 2), (0, 1))
@@ -62,8 +65,6 @@ def update(i):
     ax2.plot(c, c='k')
     ax2.set_ylim(bottom=0)
     ax2.set_ylabel('Cytoplasmic concentration')
-
-    sns.despine()
 
 
 sframe.on_changed(update)

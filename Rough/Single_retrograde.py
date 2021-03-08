@@ -3,11 +3,10 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/../..')
-import M as x
-import FlowsReview.Model as m
+
+import Model as m
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 sdirec = '_temp'
 deltas = 1
@@ -17,8 +16,9 @@ Run
 
 """
 
-model = m.Model(Dm=1, Dc=10, Vm=0.01, Vc=0, kon=0.002, koff=0.001, xsteps=100, Tmax=100, deltat=0.001, deltax=0.1,
-                c_0=1, m_0=1, flowtype=3)
+model = m.Model(Dm=1, Dc=10, Vm=0.01, Vc=0, kon=np.r_[0.01 * np.ones([80]), 0.02 * np.ones([20])], koff=0.001,
+                xsteps=100, Tmax=100, deltat=0.001, deltax=0.1, c_0=1, m_0=1, flowtype=3)
+
 for t in range(int(model.Tmax / model.deltat)):
     model.react()
     model.time = (t + 1) * model.deltat
@@ -61,8 +61,6 @@ def update(i):
     ax2.plot(c, c='k')
     ax2.set_ylim(bottom=0)
     ax2.set_ylabel('Cytoplasmic concentration')
-
-    sns.despine()
 
 
 sframe.on_changed(update)

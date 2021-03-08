@@ -1,22 +1,15 @@
+import sys
+import os
+
+home_direc = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(home_direc + '/../Model')
+
 import numpy as np
-
-"""
-Looking at flows, diffusion rates, off rates
-
-Changes:
-- linear velocity gradient
-- explicitly model cytoplasmic species (same a membrane, just faster diffusion)
-- change koff but keep kon/koff constant
-
-"""
+from parmodel import pdeRK, diffusion
 
 
 class Model:
     def __init__(self, Dm, Dc, Vm, Vc, kon, koff, xsteps, Tmax, deltat, deltax, c_0, m_0, flowtype):
-        # Species
-        self.m = np.ones([xsteps]) * m_0
-        self.c = np.ones([xsteps]) * c_0
-        self.time = 0
 
         # Diffusion
         self.Dm = Dm
@@ -31,72 +24,55 @@ class Model:
         self.kon = kon
         self.koff = koff
 
+        # Starting conditions
+        self.m_0 = m_0
+        self.c_0 = c_0
+
         # Misc
         self.xsteps = int(xsteps)
         self.Tmax = Tmax
         self.deltat = deltat
-        self.deltal = deltax
+        self.deltax = deltax
 
-    def diffusion(self, concs):
-        return concs[np.append(np.array(range(1, len(concs))), [len(concs) - 1])] - 2 * concs + concs[
-            np.append([0], np.array(range(len(concs) - 1)))]
-
-    def flow(self, concs):
+    def flow(self, concs, dx):
 
         if self.flowtype == 1:
             # Realistic
             x = np.array(range(self.xsteps)) * (100 / self.xsteps)
             v = (x / np.exp(0.00075 * (x ** 2)))[::-1]
             v[0] = 0
-            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0])
+            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
 
         if self.flowtype == 2:
             # Realistic 2
             x = np.array(range(self.xsteps)) * (100 / self.xsteps)
             v = (x / np.exp(0.08 * (x ** 1)))[::-1]
             v[0] = 0
-            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0])
+            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
 
         if self.flowtype == 3:
             # Linear
             v = np.arange(self.xsteps) / self.xsteps
-            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0])
+            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
 
-    def reactions(self):
-        """
-        r0: on
-        r1: off
-        r2: mem diffusion
-        r3: cyt diffusion
-        r4: mem flow
-        r5: cyt flow
-        """
-        r = [None] * 6
-        r[0] = self.kon * self.c
-        r[1] = self.koff * self.m
-        r[2] = (self.Dm / (self.deltal ** 2)) * self.diffusion(self.m)
-        r[3] = (self.Dc / (self.deltal ** 2)) * self.diffusion(self.c)
-        r[4] = (self.Vm / self.deltal) * self.flow(self.m)
-        r[5] = (self.Vc / self.deltal) * self.flow(self.c)
-        return r
+    def dxdt(self, X):
+        m = X[0]
+        c = X[1]
 
-    def update_m(self, r):
-        self.m += (r[0] - r[1] + r[2] - r[4]) * self.deltat
+        dm = (self.kon * c) - (self.koff * m) + (self.Dm * diffusion(m, self.deltax)) - (
+                self.Vm * self.flow(m, self.deltax))
+        dc = - (self.kon * c) + (self.koff * m) + (self.Dc * diffusion(c, self.deltax)) - (
+                self.Vc * self.flow(c, self.deltax))
 
-    def update_c(self, r):
-        self.c += (-r[0] + r[1] + r[3] - r[5]) * self.deltat
+        return [dm, dc]
 
-    def react(self):
-        r = self.reactions()
-        self.update_m(r)
-        self.update_c(r)
+    def run(self, save_gap=None):
+        if save_gap is None:
+            save_gap = self.Tmax
 
-    def save(self, direc):
-        np.savetxt(direc + 'c.txt', self.c)
-        np.savetxt(direc + 'm.txt', self.m)
-        np.savetxt(direc + 'time.txt', [self.time])
+        soln, time, solns, times = pdeRK(dxdt=self.dxdt,
+                                         X0=[np.ones([self.xsteps]) * self.m_0, np.ones([self.xsteps]) * self.c_0],
+                                         Tmax=self.Tmax, deltat=self.deltat,
+                                         t_eval=np.arange(0, self.Tmax + 0.0001, save_gap))
 
-    def run(self):
-        for t in range(int(self.Tmax / self.deltat)):
-            self.react()
-            self.time = (t + 1) * self.deltat
+        return soln, time, solns, times
