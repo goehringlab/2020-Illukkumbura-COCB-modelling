@@ -9,4 +9,4 @@ Model.py contains the model. Figures in the paper (3 and 4d) can be recreated by
 (Run.py to the simulations, Figs.py to create the figures).
 
 To run this code you must install the necessary dependencies laid out in requirements.txt, as well as the following 
-repository which contains code for performing PDE simulations: []
+repository which contains code for performing PDE simulations: https://github.com/tsmbland/polaritymodel
