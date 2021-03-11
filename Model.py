@@ -9,7 +9,7 @@ from parmodel import pdeRK, diffusion
 
 
 class Model:
-    def __init__(self, Dm, Dc, Vm, Vc, kon, koff, xsteps, Tmax, deltat, deltax, c_0, m_0, flowtype):
+    def __init__(self, Dm, Dc, Vm, Vc, kon, koff, xsteps, Tmax, deltat, deltax, c_0, m_0):
 
         # Diffusion
         self.Dm = Dm
@@ -18,7 +18,6 @@ class Model:
         # Flow
         self.Vm = Vm
         self.Vc = Vc
-        self.flowtype = flowtype
 
         # Membrane exchange
         self.kon = kon
@@ -35,25 +34,8 @@ class Model:
         self.deltax = deltax
 
     def flow(self, concs, dx):
-
-        if self.flowtype == 1:
-            # Realistic
-            x = np.array(range(self.xsteps)) * (100 / self.xsteps)
-            v = (x / np.exp(0.00075 * (x ** 2)))[::-1]
-            v[0] = 0
-            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
-
-        if self.flowtype == 2:
-            # Realistic 2
-            x = np.array(range(self.xsteps)) * (100 / self.xsteps)
-            v = (x / np.exp(0.08 * (x ** 1)))[::-1]
-            v[0] = 0
-            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
-
-        if self.flowtype == 3:
-            # Linear
-            v = np.arange(self.xsteps) / self.xsteps
-            return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
+        v = np.arange(self.xsteps) / self.xsteps
+        return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
 
     def dxdt(self, X):
         m = X[0]
@@ -63,7 +45,6 @@ class Model:
                 self.Vm * self.flow(m, self.deltax))
         dc = - (self.kon * c) + (self.koff * m) + (self.Dc * diffusion(c, self.deltax)) - (
                 self.Vc * self.flow(c, self.deltax))
-
         return [dm, dc]
 
     def run(self, save_gap=None):
@@ -74,5 +55,4 @@ class Model:
                                          X0=[np.ones([self.xsteps]) * self.m_0, np.ones([self.xsteps]) * self.c_0],
                                          Tmax=self.Tmax, deltat=self.deltat,
                                          t_eval=np.arange(0, self.Tmax + 0.0001, save_gap))
-
         return soln, time, solns, times

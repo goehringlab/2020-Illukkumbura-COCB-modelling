@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 """
-A
+A: no exchange, vary D
+(Figure 3a)
 
 """
 
@@ -21,7 +22,8 @@ for i, d_param in enumerate(d_params):
 plt.savefig('A.svg')
 
 """
-B
+B: exchanging, vary kon, koff
+(Figure 3B)
 
 """
 
@@ -41,7 +43,8 @@ for i, k_param in enumerate(k_params):
 plt.savefig('B.svg')
 
 """
-C
+C: retrograde flow
+(Figure 4D)
 
 """
 
