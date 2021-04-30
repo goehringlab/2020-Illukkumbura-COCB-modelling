@@ -1,0 +1,3 @@
+[submodule "polaritymodel"]
+	path = polaritymodel
+	url = https://github.com/tsmbland/polaritymodel
