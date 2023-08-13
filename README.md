@@ -8,7 +8,7 @@ Illukkumbura, R., Bland, T., and Goehring, N.W. (2020). [Patterning and polariza
 Curr. Opin. Cell Biol. 62, 123–134.
 
 Model.py contains the model. Figures in the paper (3 and 4d) can be recreated by running scripts in the Figures folder 
-(Run.py to the simulations, Figs.py to create the figures).
+(Run.py to run the simulations, Figs.py to create the figures).
 Tested with Python 3.7
 
 
