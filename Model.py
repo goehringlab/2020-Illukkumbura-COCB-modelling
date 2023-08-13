@@ -1,16 +1,17 @@
-import sys
-import os
-
-home_direc = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(home_direc + '/../Model')
-
 import numpy as np
-from polaritymodel import pdeRK, diffusion
+from pde_rk import pde_rk
+
+
+def diffusion(concs, dx=1):
+    concs_ = np.r_[concs[0], concs, concs[-1]]
+    d = concs_[:-2] - 2 * concs_[1:-1] + concs_[2:]
+    return d / (dx**2)
 
 
 class Model:
-    def __init__(self, Dm, Dc, Vm, Vc, kon, koff, xsteps, Tmax, deltat, deltax, c_0, m_0):
-
+    def __init__(
+        self, Dm, Dc, Vm, Vc, kon, koff, xsteps, Tmax, deltat, deltax, c_0, m_0
+    ):
         # Diffusion
         self.Dm = Dm
         self.Dc = Dc
@@ -18,6 +19,7 @@ class Model:
         # Flow
         self.Vm = Vm
         self.Vc = Vc
+        self.flow_profile = np.arange(int(xsteps)) / xsteps
 
         # Membrane exchange
         self.kon = kon
@@ -34,25 +36,35 @@ class Model:
         self.deltax = deltax
 
     def flow(self, concs, dx):
-        v = np.arange(self.xsteps) / self.xsteps
-        return - np.diff(np.r_[concs, concs[-1]] * np.r_[v, 0]) / dx
+        return -np.diff(np.r_[concs, concs[-1]] * np.r_[self.flow_profile, 0]) / dx
 
     def dxdt(self, X):
         m = X[0]
         c = X[1]
 
-        dm = (self.kon * c) - (self.koff * m) + (self.Dm * diffusion(m, self.deltax)) - (
-                self.Vm * self.flow(m, self.deltax))
-        dc = - (self.kon * c) + (self.koff * m) + (self.Dc * diffusion(c, self.deltax)) - (
-                self.Vc * self.flow(c, self.deltax))
+        dm = (
+            (self.kon * c)
+            - (self.koff * m)
+            + (self.Dm * diffusion(m, self.deltax))
+            - (self.Vm * self.flow(m, self.deltax))
+        )
+        dc = (
+            -(self.kon * c)
+            + (self.koff * m)
+            + (self.Dc * diffusion(c, self.deltax))
+            - (self.Vc * self.flow(c, self.deltax))
+        )
         return [dm, dc]
 
     def run(self, save_gap=None):
         if save_gap is None:
             save_gap = self.Tmax
 
-        soln, time, solns, times = pdeRK(dxdt=self.dxdt,
-                                         X0=[np.ones([self.xsteps]) * self.m_0, np.ones([self.xsteps]) * self.c_0],
-                                         Tmax=self.Tmax, deltat=self.deltat,
-                                         t_eval=np.arange(0, self.Tmax + 0.0001, save_gap))
+        soln, time, solns, times = pde_rk(
+            dxdt=self.dxdt,
+            X0=[np.ones([self.xsteps]) * self.m_0, np.ones([self.xsteps]) * self.c_0],
+            Tmax=self.Tmax,
+            deltat=self.deltat,
+            t_eval=np.arange(0, self.Tmax + 0.0001, save_gap),
+        )
         return soln, time, solns, times
